@@ -5,6 +5,7 @@
 @stop
 
 @section('right')
+    @include('entities.book-tree')
 
     <div class="actions mb-xl">
         <h5>{{ trans('common.actions') }}</h5>
@@ -24,6 +25,14 @@
             </a>
         </div>
     </div>
+    <div id="popular" class="mb-xl">
+        <h5>{{ trans('entities.shelves_popular') }}</h5>
+        @if(count($popular) > 0)
+            @include('entities.list', ['entities' => $popular, 'style' => 'compact'])
+        @else
+            <p class="text-muted pb-l mb-none">{{ trans('entities.shelves_popular_empty') }}</p>
+        @endif
+    </div>
 
 @stop
 
@@ -34,15 +43,14 @@
             @include('entities.list', ['entities' => $recents, 'style' => 'compact'])
         </div>
     @endif
-
-    <div id="popular" class="mb-xl">
+    {{-- <div id="popular" class="mb-xl">
         <h5>{{ trans('entities.shelves_popular') }}</h5>
         @if(count($popular) > 0)
             @include('entities.list', ['entities' => $popular, 'style' => 'compact'])
         @else
             <p class="text-muted pb-l mb-none">{{ trans('entities.shelves_popular_empty') }}</p>
         @endif
-    </div>
+    </div> --}}
 
     <div id="new" class="mb-xl">
         <h5>{{ trans('entities.shelves_new') }}</h5>

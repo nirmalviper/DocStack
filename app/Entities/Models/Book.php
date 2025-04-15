@@ -109,6 +109,11 @@ class Book extends Entity implements HasCoverImage
         return $this->pages()->where('chapter_id', '=', '0');
     }
 
+    public function pagesViaChapters()
+    {
+        return $this->hasMany(Page::class)->whereNull('chapter_id');
+    }
+    
     /**
      * Get all chapters within this book.
      */

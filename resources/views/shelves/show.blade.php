@@ -75,6 +75,7 @@
             @include('entities.tag-list', ['entity' => $shelf])
         </div>
     @endif
+    @include('entities.book-tree')
 
     <div id="details" class="mb-xl">
         <h5>{{ trans('common.details') }}</h5>

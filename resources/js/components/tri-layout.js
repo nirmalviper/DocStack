@@ -25,9 +25,8 @@ export class TriLayout extends Component {
     }
 
     updateLayout() {
-        let newLayout = 'tablet';
-        if (window.innerWidth <= 1000) newLayout = 'mobile';
-        if (window.innerWidth > 1400) newLayout = 'desktop';
+        // Force the layout to behave like mobile for all screen sizes
+        const newLayout = 'mobile';
         if (newLayout === this.lastLayoutType) return;
 
         if (this.onDestroy) {
@@ -35,11 +34,7 @@ export class TriLayout extends Component {
             this.onDestroy = null;
         }
 
-        if (newLayout === 'desktop') {
-            this.setupDesktop();
-        } else if (newLayout === 'mobile') {
-            this.setupMobile();
-        }
+        this.setupMobile(); // Always use the mobile setup
 
         this.lastLayoutType = newLayout;
     }
@@ -54,10 +49,9 @@ export class TriLayout extends Component {
                 tab.removeEventListener('click', this.mobileTabClick);
             }
         };
-    }
 
-    setupDesktop() {
-        //
+        // Ensure the container has the mobile class for styling
+        this.container.classList.add('mobile-layout');
     }
 
     /**
@@ -107,5 +101,5 @@ export class TriLayout extends Component {
 
         this.lastTabShown = tabName;
     }
-
+    
 }

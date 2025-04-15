@@ -2,10 +2,12 @@
 
 namespace BookStack\Entities\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use BookStack\Activity\Models\View;
 use BookStack\Activity\Tools\CommentTree;
 use BookStack\Activity\Tools\UserEntityWatchOptions;
 use BookStack\Entities\Models\Book;
+use BookStack\Entities\Models\Bookshelf;
 use BookStack\Entities\Models\Chapter;
 use BookStack\Entities\Queries\EntityQueries;
 use BookStack\Entities\Queries\PageQueries;
@@ -146,32 +148,70 @@ class PageController extends Controller
 
             return redirect($page->getUrl());
         }
-
+        $shelves = Bookshelf::with([
+            'books' => function ($query) {
+                $query->with([
+                    'chapters.pages',
+                    'pages' // lone pages
+                ])->scopes('visible');
+            }
+        ])->get();
         $this->checkOwnablePermission('page-view', $page);
 
         $pageContent = (new PageContent($page));
         $page->html = $pageContent->render();
         $pageNav = $pageContent->getNavigation($page->html);
 
-        $sidebarTree = (new BookContents($page->book))->getTree();
+        $sidebarTree = (new BookContents($page->book))->getSideBarTree(false, false, $page);
         $commentTree = (new CommentTree($page));
         $nextPreviousLocator = new NextPreviousContentLocator($page, $sidebarTree);
 
         View::incrementFor($page);
         $this->setPageTitle($page->getShortName());
 
-        return view('pages.show', [
-            'page'            => $page,
-            'book'            => $page->book,
-            'current'         => $page,
-            'sidebarTree'     => $sidebarTree,
-            'commentTree'     => $commentTree,
-            'pageNav'         => $pageNav,
-            'watchOptions'    => new UserEntityWatchOptions(user(), $page),
-            'next'            => $nextPreviousLocator->getNext(),
-            'previous'        => $nextPreviousLocator->getPrevious(),
-            'referenceCount'  => $this->referenceFetcher->getReferenceCountToEntity($page),
-        ]);
+        if(userCan('page-update', $page)){
+            $page = $this->queries->findVisibleBySlugsOrFail($bookSlug, $pageSlug);
+            $this->checkOwnablePermission('page-update', $page);
+            $editorData = new PageEditorData($page, $this->entityQueries, '');
+            if ($editorData->getWarnings()) {
+                // $this->showWarningNotification(implode("\n", $editorData->getWarnings()));
+            }
+            $editorDataNew = $editorData->getViewData();
+            $this->setPageTitle(trans('entities.pages_editing_named', ['pageName' => $page->getShortName()]));
+            return view('pages.show', [
+                'isDraft'         => $editorDataNew['isDraft'],
+                'isDraftRevision' => $editorDataNew['isDraftRevision'],
+                'draftsEnabled'   => $editorDataNew['draftsEnabled'],
+                'templates'       => $editorDataNew['templates'],
+                'editor'          => $editorDataNew['editor'],
+                'comments'        => $editorDataNew['comments'],
+                'shelves'         => $shelves,
+                'page'            => $page,
+                'book'            => $page->book,
+                'current'         => $page,
+                'sidebarTree'     => $sidebarTree,
+                'commentTree'     => $commentTree,
+                'pageNav'         => $pageNav,
+                'watchOptions'    => new UserEntityWatchOptions(user(), $page),
+                'next'            => $nextPreviousLocator->getNext(),
+                'previous'        => $nextPreviousLocator->getPrevious(),
+                'referenceCount'  => $this->referenceFetcher->getReferenceCountToEntity($page),
+            ]);
+        } else {
+            return view('pages.show', [
+                'shelves'         => $shelves,
+                'page'            => $page,
+                'book'            => $page->book,
+                'current'         => $page,
+                'sidebarTree'     => $sidebarTree,
+                'commentTree'     => $commentTree,
+                'pageNav'         => $pageNav,
+                'watchOptions'    => new UserEntityWatchOptions(user(), $page),
+                'next'            => $nextPreviousLocator->getNext(),
+                'previous'        => $nextPreviousLocator->getPrevious(),
+                'referenceCount'  => $this->referenceFetcher->getReferenceCountToEntity($page),
+            ]);
+        }
     }
 
     /**
@@ -225,6 +265,30 @@ class PageController extends Controller
         $this->pageRepo->update($page, $request->all());
 
         return redirect($page->getUrl());
+    }
+    public function updatePageAjax(Request $request, string $bookSlug, string $pageSlug)
+    {
+        $this->validate($request, [
+            'name' => ['required', 'string', 'max:255'],
+            // Add any other fields you expect here
+        ]);
+    
+        $page = $this->queries->findVisibleBySlugsOrFail($bookSlug, $pageSlug);
+        $this->checkOwnablePermission('page-update', $page);
+        try {
+            $this->pageRepo->update($page, $request->all());
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Page updated successfully.',
+                'html' => $page->html,
+                'name' => $page->name, // Optional: return updated page data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update the page: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

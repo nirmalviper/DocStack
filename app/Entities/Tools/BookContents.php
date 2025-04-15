@@ -4,6 +4,7 @@ namespace BookStack\Entities\Tools;
 
 use BookStack\Entities\Models\Book;
 use BookStack\Entities\Models\BookChild;
+use BookStack\Entities\Models\Bookshelf;
 use BookStack\Entities\Models\Chapter;
 use BookStack\Entities\Models\Entity;
 use BookStack\Entities\Models\Page;
@@ -41,7 +42,89 @@ class BookContents
     /**
      * Get the contents as a sorted collection tree.
      */
-    public function getTree(bool $showDrafts = false, bool $renderPages = false): Collection
+    // public function getTree(bool $showDrafts = false, bool $renderPages = false): Collection
+    // {
+    //     $pages = $this->getPages($showDrafts, $renderPages);
+    //     $chapters = $this->book->chapters()->scopes('visible')->get();
+    //     $all = collect()->concat($pages)->concat($chapters);
+    //     $chapterMap = $chapters->keyBy('id');
+    //     $lonePages = collect();
+
+    //     $pages->groupBy('chapter_id')->each(function ($pages, $chapter_id) use ($chapterMap, &$lonePages) {
+    //         $chapter = $chapterMap->get($chapter_id);
+    //         if ($chapter) {
+    //             $chapter->setAttribute('visible_pages', collect($pages)->sortBy($this->bookChildSortFunc()));
+    //         } else {
+    //             $lonePages = $lonePages->concat($pages);
+    //         }
+    //     });
+
+    //     $chapters->whereNull('visible_pages')->each(function (Chapter $chapter) {
+    //         $chapter->setAttribute('visible_pages', collect([]));
+    //     });
+
+    //     $all->each(function (Entity $entity) use ($renderPages) {
+    //         $entity->setRelation('book', $this->book);
+
+    //         if ($renderPages && $entity instanceof Page) {
+    //             $entity->html = (new PageContent($entity))->render();
+    //         }
+    //     });
+
+    //     return collect($chapters)->concat($lonePages)->sortBy($this->bookChildSortFunc());
+    // }
+
+    public function getSideBarTree(bool $showDrafts = false, bool $renderPages = false, Entity $current = null): Collection
+    {
+        $currentPageId = $current instanceof Page ? $current->id : null;
+        $currentChapterId = $current instanceof Chapter ? $current->id : ($current->chapter_id ?? null);
+        $currentBookId = $current instanceof Book ? $current->id : ($current->id ?? null);
+
+        
+        // Load all shelves with full relationships
+        $shelves = Bookshelf::with([
+            'books' => function ($query) {
+                $query->with([
+                    'pages',
+                    'pages' // lone pages
+                ])->scopes('visible');
+            }
+        ])->get();
+
+        // Walk through and mark open flags
+        foreach ($shelves as $shelf) {
+            $shelf->is_open = false;
+
+            foreach ($shelf->books as $book) {
+                $book->is_open = false;
+                $bookHasCurrent = ($book->id === $currentBookId);
+                if ($bookHasCurrent) {
+                    $book->is_open = true;
+                }
+
+                foreach ($book->chapters as $chapter) {
+                    $chapter->is_open = ($chapter->id === $currentChapterId);
+                    if ($chapter->is_open) {
+                        $book->is_open = true;
+                    }
+                }
+
+                foreach ($book->pages as $page) {
+                    if ($page->id === $currentPageId) {
+                        $book->is_open = true;
+                    }
+                }
+
+                if ($book->is_open) {
+                    $shelf->is_open = true;
+                }
+            }
+        }
+        $shelvesTree = collect($shelves);
+        return $shelvesTree;
+    }
+
+    public function getTree(bool $showDrafts = false, bool $renderPages = false)
     {
         $pages = $this->getPages($showDrafts, $renderPages);
         $chapters = $this->book->chapters()->scopes('visible')->get();

@@ -5,6 +5,7 @@ namespace BookStack\Entities\Controllers;
 use BookStack\Activity\Models\View;
 use BookStack\Activity\Tools\UserEntityWatchOptions;
 use BookStack\Entities\Models\Book;
+use BookStack\Entities\Models\Bookshelf;
 use BookStack\Entities\Queries\ChapterQueries;
 use BookStack\Entities\Queries\EntityQueries;
 use BookStack\Entities\Repos\ChapterRepo;
@@ -75,10 +76,17 @@ class ChapterController extends Controller
      */
     public function show(string $bookSlug, string $chapterSlug)
     {
+        $shelves = Bookshelf::with([
+            'books' => function ($query) {
+                $query->with([
+                    'chapters.pages',
+                    'pages' // lone pages
+                ])->scopes('visible');
+            }
+        ])->get();
         $chapter = $this->queries->findVisibleBySlugsOrFail($bookSlug, $chapterSlug);
         $this->checkOwnablePermission('chapter-view', $chapter);
-
-        $sidebarTree = (new BookContents($chapter->book))->getTree();
+        $sidebarTree = (new BookContents($chapter->book))->getSideBarTree(false, false, $chapter);
         $pages = $this->entityQueries->pages->visibleForChapterList($chapter->id)->get();
 
         $nextPreviousLocator = new NextPreviousContentLocator($chapter, $sidebarTree);
@@ -87,6 +95,7 @@ class ChapterController extends Controller
         $this->setPageTitle($chapter->getShortName());
 
         return view('chapters.show', [
+            'shelves'        => $shelves,
             'book'           => $chapter->book,
             'chapter'        => $chapter,
             'current'        => $chapter,

@@ -4,6 +4,8 @@ namespace BookStack\Entities\Controllers;
 
 use BookStack\Activity\ActivityQueries;
 use BookStack\Activity\Models\View;
+use BookStack\Entities\Models\Book;
+use BookStack\Entities\Tools\BookContents;
 use BookStack\Entities\Queries\BookQueries;
 use BookStack\Entities\Queries\BookshelfQueries;
 use BookStack\Entities\Repos\BookshelfRepo;
@@ -43,6 +45,8 @@ class BookshelfController extends Controller
         $shelves = $this->queries->visibleForListWithCover()
             ->orderBy($listOptions->getSort(), $listOptions->getOrder())
             ->paginate(18);
+        $sidebarTree = (new BookContents(Book::find(1)))->getSideBarTree(false, false, null);
+
         $recents = $this->isSignedIn() ? $this->queries->recentlyViewedForCurrentUser()->get() : false;
         $popular = $this->queries->popularForList()->get();
         $new = $this->queries->visibleForList()
@@ -54,6 +58,7 @@ class BookshelfController extends Controller
         $this->setPageTitle(trans('entities.shelves'));
 
         return view('shelves.index', [
+            'sidebarTree' => $sidebarTree,
             'shelves'     => $shelves,
             'recents'     => $recents,
             'popular'     => $popular,
@@ -114,6 +119,7 @@ class BookshelfController extends Controller
             'updated_at' => trans('common.sort_updated_at'),
         ]);
 
+        $sidebarTree = (new BookContents($shelf->books()->first()))->getSideBarTree(false, false, null);
         $sort = $listOptions->getSort();
         $sortedVisibleShelfBooks = $shelf->visibleBooks()
             ->reorder($sort === 'default' ? 'order' : $sort, $listOptions->getOrder())
@@ -128,6 +134,7 @@ class BookshelfController extends Controller
         $this->setPageTitle($shelf->getShortName());
 
         return view('shelves.show', [
+            'sidebarTree'            => $sidebarTree,
             'shelf'                   => $shelf,
             'sortedVisibleShelfBooks' => $sortedVisibleShelfBooks,
             'view'                    => $view,

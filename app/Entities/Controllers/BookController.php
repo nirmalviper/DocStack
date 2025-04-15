@@ -5,6 +5,7 @@ namespace BookStack\Entities\Controllers;
 use BookStack\Activity\ActivityQueries;
 use BookStack\Activity\ActivityType;
 use BookStack\Activity\Models\View;
+use BookStack\Entities\Models\Book;
 use BookStack\Activity\Tools\UserEntityWatchOptions;
 use BookStack\Entities\Queries\BookQueries;
 use BookStack\Entities\Queries\BookshelfQueries;
@@ -49,6 +50,8 @@ class BookController extends Controller
         $books = $this->queries->visibleForListWithCover()
             ->orderBy($listOptions->getSort(), $listOptions->getOrder())
             ->paginate(18);
+        $sidebarTree = (new BookContents(Book::find(1)))->getSideBarTree(false, false, null);
+
         $recents = $this->isSignedIn() ? $this->queries->recentlyViewedForCurrentUser()->take(4)->get() : false;
         $popular = $this->queries->popularForList()->take(4)->get();
         $new = $this->queries->visibleForList()->orderBy('created_at', 'desc')->take(4)->get();
@@ -58,6 +61,7 @@ class BookController extends Controller
         $this->setPageTitle(trans('entities.books'));
 
         return view('books.index', [
+            'sidebarTree' => $sidebarTree,
             'books'   => $books,
             'recents' => $recents,
             'popular' => $popular,
@@ -133,10 +137,11 @@ class BookController extends Controller
         if ($request->has('shelf')) {
             $this->shelfContext->setShelfContext(intval($request->get('shelf')));
         }
-
+        $sidebarTree = (new BookContents($book))->getSideBarTree(false, false, $book);
         $this->setPageTitle($book->getShortName());
 
         return view('books.show', [
+            'sidebarTree'       => $sidebarTree,
             'book'              => $book,
             'current'           => $book,
             'bookChildren'      => $bookChildren,

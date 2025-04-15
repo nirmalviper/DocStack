@@ -8,35 +8,49 @@
 
 @section('body')
 
-    <div class="mb-m print-hidden">
-        @include('entities.breadcrumbs', ['crumbs' => [
-            $page->book,
-            $page->hasChapter() ? $page->chapter : null,
-            $page,
-        ]])
-    </div>
-
-    <main class="content-wrap card">
-        <div component="page-display"
-             option:page-display:page-id="{{ $page->id }}"
-             class="page-content clearfix">
-            @include('pages.parts.page-display')
+    <div id='main-show-page-data' class="main-show-page-data">
+        <div class="mb-m print-hidden">
+            @include('entities.breadcrumbs', ['crumbs' => [
+                $page->book,
+                $page->hasChapter() ? $page->chapter : null,
+                $page,
+            ]])
         </div>
-        @include('pages.parts.pointer', ['page' => $page])
-    </main>
-
-    @include('entities.sibling-navigation', ['next' => $next, 'previous' => $previous])
-
-    @if ($commentTree->enabled())
-        @if(($previous || $next))
-            <div class="px-xl print-hidden">
-                <hr class="darker">
+        <main class="content-wrap card content-wrap-card-page-show">
+            <div component="page-display"
+                 option:page-display:page-id="{{ $page->id }}"
+                 class="page-content clearfix">
+                @include('pages.parts.page-display')
+            </div>
+            @include('pages.parts.pointer', ['page' => $page])
+        </main>
+        @include('entities.sibling-navigation', ['next' => $next, 'previous' => $previous])
+        @if ($commentTree->enabled())
+            @if(($previous || $next))
+                <div class="px-xl print-hidden">
+                    <hr class="darker">
+                </div>
+            @endif
+            <div class="comments-container mb-l print-hidden">
+                @include('comments.comments', ['commentTree' => $commentTree, 'page' => $page])
+                <div class="clearfix"></div>
             </div>
         @endif
-
-        <div class="comments-container mb-l print-hidden">
-            @include('comments.comments', ['commentTree' => $commentTree, 'page' => $page])
-            <div class="clearfix"></div>
+    </div>
+    @if(userCan('page-update', $page))
+        <div id='main-edit-page-data' class="main-edit-page-data" >
+            <div id="main-content" class="flex-fill flex height-fill">
+                <form id="page-edit-form" action="{{ $page->getUrl(). '/ajax' }}" autocomplete="off" data-page-id="{{ $page->id }}" method="POST" class="flex flex-fill">
+                    {{ csrf_field() }}
+        
+                    @if(!$isDraft) {{ method_field('PUT') }} @endif
+                    @include('pages.parts.form', ['model' => $page])
+                </form>
+            </div>
+            
+            @include('pages.parts.image-manager', ['uploaded_to' => $page->id])
+            @include('pages.parts.code-editor')
+            @include('entities.selector-popup')
         </div>
     @endif
 @stop
@@ -147,11 +161,23 @@
 
             {{--User Actions--}}
             @if(userCan('page-update', $page))
+                <div id='main-edit-page-button' class="icon-list-item">
+                    <span>@icon('edit')</span>
+                    <span>{{ trans('common.edit') }}</span>
+                </div>
+            @endif
+            @if(userCan('page-update', $page))
+                <div id='main-back-page-button' class="icon-list-item">
+                    <span>@icon('back')</span>
+                    <span>{{ trans('common.back') }}</span>
+                </div>
+            @endif
+            {{-- @if(userCan('page-update', $page))
                 <a href="{{ $page->getUrl('/edit') }}" data-shortcut="edit" class="icon-list-item">
                     <span>@icon('edit')</span>
                     <span>{{ trans('common.edit') }}</span>
                 </a>
-            @endif
+            @endif --}}
             @if(userCanOnAny('create', \BookStack\Entities\Models\Book::class) || userCanOnAny('create', \BookStack\Entities\Models\Chapter::class) || userCan('page-create-all') || userCan('page-create-own'))
                 <a href="{{ $page->getUrl('/copy') }}" data-shortcut="copy" class="icon-list-item">
                     <span>@icon('copy')</span>

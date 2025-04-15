@@ -30,9 +30,9 @@
             @if(count($bookChildren) > 0)
                 <div class="entity-list book-contents">
                     @foreach($bookChildren as $childElement)
-                        @if($childElement->isA('chapter'))
-                            @include('chapters.parts.list-item', ['chapter' => $childElement])
-                        @else
+                    @if($childElement->isA('chapter'))
+                        @include('chapters.parts.list-item', ['chapter' => $childElement])
+                    @else
                             @include('pages.parts.list-item', ['page' => $childElement])
                         @endif
                     @endforeach
@@ -154,8 +154,8 @@
 @stop
 
 @section('left')
-
     @include('entities.search-form', ['label' => trans('entities.books_search_this')])
+    @include('entities.book-tree')
 
     @if($book->tags->count() > 0)
         <div class="mb-xl">

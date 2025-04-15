@@ -1,10 +1,10 @@
 <div component="chapter-contents" class="chapter-child-menu">
-    <button type="button"
+    {{-- <button type="button"
             refs="chapter-contents@toggle"
             aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
             class="text-muted chapter-contents-toggle @if($isOpen) open @endif">
         @icon('caret-right') @icon('page') <span>{{ trans_choice('entities.x_pages', $bookChild->visible_pages->count()) }}</span>
-    </button>
+    </button> --}}
     <ul refs="chapter-contents@list"
         class="chapter-contents-list sub-menu inset-list @if($isOpen) open @endif" @if($isOpen)
         style="display: block;" @endif

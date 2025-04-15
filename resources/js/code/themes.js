@@ -129,3 +129,4 @@ export function getTheme(viewParentEl) {
 
     return [viewTheme, syntaxHighlighting(highlightStyle)];
 }
+

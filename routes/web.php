@@ -106,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/books/{bookSlug}/page/{pageSlug}/permissions', [PermissionsController::class, 'updateForPage']);
     Route::get('/books/{bookSlug}/page/{pageSlug}/references', [ReferenceController::class, 'page']);
     Route::put('/books/{bookSlug}/page/{pageSlug}', [EntityControllers\PageController::class, 'update']);
+    Route::put('/books/{bookSlug}/page/{pageSlug}/ajax', [EntityControllers\PageController::class, 'updatePageAjax']);
     Route::delete('/books/{bookSlug}/page/{pageSlug}', [EntityControllers\PageController::class, 'destroy']);
     Route::delete('/books/{bookSlug}/draft/{pageId}', [EntityControllers\PageController::class, 'destroyDraft']);
 

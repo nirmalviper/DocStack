@@ -5,6 +5,7 @@
 @stop
 
 @section('left')
+    @include('entities.book-tree')
     @if($recents)
         <div id="recents" class="mb-xl">
             <h5>{{ trans('entities.recently_viewed') }}</h5>

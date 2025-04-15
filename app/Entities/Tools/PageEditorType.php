@@ -6,8 +6,8 @@ use BookStack\Entities\Models\Page;
 
 enum PageEditorType: string
 {
-    case WysiwygTinymce = 'wysiwyg';
-    case WysiwygLexical = 'wysiwyg2024';
+    case WysiwygTinymce = 'wysiwygTinymce';
+    case WysiwygLexical = 'wysiwyg';
     case Markdown = 'markdown';
 
     public function isHtmlBased(): bool
